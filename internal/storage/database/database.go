@@ -1,6 +1,11 @@
 package database
 
 import (
+	"database/sql"
+	"errors"
+	"fmt"
+	"url-shortener/internal/storage"
+
 	"github.com/jmoiron/sqlx"
 )
 
@@ -11,3 +16,39 @@ type Storage struct {
 func NewStorage(db *sqlx.DB) *Storage {
 	return &Storage{db: db}
 }
+
+func (s *Storage) SaveURL(urlToSave, alias string) (int64, error) {
+	const op = "storage.database.database"
+	query := `INSERT INTO url(url, alias) VALUES($1, $2)`
+
+	res, err := s.db.Exec(query, urlToSave, alias)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("%s: failed to get last insert id: %w", op, err)
+	}
+	return id, nil
+}
+
+func (s *Storage) GetURL(alias string) (string, error) {
+	const op = "storage.database.database"
+	query := `SELECT url FROM url WHERE alias = $1`
+	var result string
+
+	err := s.db.QueryRow(query, alias).Scan(&result)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", storage.ErrURLNotFound
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	return result, nil
+}
+
+// TODO реализовать методы getAll и Delete URL
