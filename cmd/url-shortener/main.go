@@ -4,8 +4,12 @@ import (
 	"log/slog"
 	"os"
 	"url-shortener/internal/config"
+	"url-shortener/internal/http-server/handlers/url/save"
 	"url-shortener/internal/lib/logger/sl"
 	"url-shortener/internal/storage/database"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 const (
@@ -29,7 +33,14 @@ func main() {
 	defer db.Close()
 
 	stor := database.NewStorage(db)
-	_ = stor
+
+	router := chi.NewRouter()
+	router.Use(middleware.RequestID)
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
+	router.Use(middleware.URLFormat)
+
+	router.Post("/url", save.New(log, stor))
 }
 
 func setupLogger(env string) *slog.Logger {
