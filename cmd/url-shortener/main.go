@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"url-shortener/internal/config"
+	getall "url-shortener/internal/http-server/handlers/url/getAll"
 	"url-shortener/internal/http-server/handlers/url/save"
 	"url-shortener/internal/lib/logger/sl"
 	"url-shortener/internal/storage/database"
@@ -42,6 +43,7 @@ func main() {
 	router.Use(middleware.URLFormat)
 
 	router.Post("/url", save.New(log, stor))
+	router.Get("/", getall.New(log, stor))
 
 	srv := &http.Server{
 		Addr:         cfg.Address,
@@ -54,6 +56,8 @@ func main() {
 	if err := srv.ListenAndServe(); err != nil {
 		log.Error("failed to start server")
 	}
+
+	//TODO handler redirect 1.53 minute
 }
 
 func setupLogger(env string) *slog.Logger {

@@ -17,6 +17,11 @@ func NewStorage(db *sqlx.DB) *Storage {
 	return &Storage{db: db}
 }
 
+type Results struct {
+	URL   string `db:"url" json:"url"`
+	Alias string `db:"alias" json:"alias"`
+}
+
 func (s *Storage) SaveURL(urlToSave, alias string) (int64, error) {
 	const op = "storage.database.database"
 	query := `INSERT INTO url(url, alias) VALUES($1, $2)`
@@ -51,4 +56,16 @@ func (s *Storage) GetURL(alias string) (string, error) {
 	return result, nil
 }
 
-// TODO реализовать методы getAll и Delete URL
+func (s *Storage) GetAll() ([]Results, error) {
+	const op = "storage.database.database"
+	res := make([]Results, 0)
+	query := `SELECT url, alias FROM url`
+
+	err := s.db.Select(&res, query)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return res, nil
+}
+
+// TODO реализовать метод Delete URL
