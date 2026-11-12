@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"url-shortener/internal/config"
+	"url-shortener/internal/http-server/handlers/redirect"
 	deleteurl "url-shortener/internal/http-server/handlers/url/delete"
 	getall "url-shortener/internal/http-server/handlers/url/getAll"
 	"url-shortener/internal/http-server/handlers/url/save"
@@ -25,8 +26,6 @@ func main() {
 
 	cfg := config.MustLoadConfig()
 	log := setupLogger(cfg.Env)
-	log.Info("starting url-shortener")
-	log.Debug("debug messages are enabled")
 
 	db, err := database.Connect(cfg.StoragePath)
 	if err != nil {
@@ -45,7 +44,8 @@ func main() {
 
 	router.Post("/url", save.New(log, stor))
 	router.Get("/", getall.New(log, stor))
-	router.Delete("/{alias}", deleteurl.New(log, stor))
+	router.Get("/{alias}", redirect.New(log, stor))
+	router.Delete("/delete/{alias}", deleteurl.New(log, stor))
 
 	srv := &http.Server{
 		Addr:         cfg.Address,
