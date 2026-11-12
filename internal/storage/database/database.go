@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"url-shortener/internal/storage"
-
 	"github.com/jmoiron/sqlx"
 )
 
@@ -68,4 +67,22 @@ func (s *Storage) GetAll() ([]Results, error) {
 	return res, nil
 }
 
-// TODO реализовать метод Delete URL
+func (s *Storage) Delete(alias string) error {
+	const op = "storage.database.database"
+	query := `DELETE FROM url WHERE alias = $1`
+
+	result, err := s.db.Exec(query, alias)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	row, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	if row == 0 {
+		return fmt.Errorf("%s: %w", op, storage.ErrURLNotFound)
+	}
+	return nil
+}

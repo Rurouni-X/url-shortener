@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"url-shortener/internal/config"
+	deleteurl "url-shortener/internal/http-server/handlers/url/delete"
 	getall "url-shortener/internal/http-server/handlers/url/getAll"
 	"url-shortener/internal/http-server/handlers/url/save"
 	"url-shortener/internal/lib/logger/sl"
@@ -44,6 +45,7 @@ func main() {
 
 	router.Post("/url", save.New(log, stor))
 	router.Get("/", getall.New(log, stor))
+	router.Delete("/{alias}", deleteurl.New(log, stor))
 
 	srv := &http.Server{
 		Addr:         cfg.Address,
