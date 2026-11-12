@@ -1,5 +1,5 @@
 package main
-
+// 2.28 деплой проекта
 import (
 	"log/slog"
 	"net/http"
@@ -47,11 +47,11 @@ func main() {
 			cfg.HTTPServer.User: cfg.HTTPServer.Password,
 		}))
 		r.Post("/", save.New(log, stor))
+		r.Delete("/{alias}", deleteurl.New(log, stor))
 	})
 	
 	router.Get("/", getall.New(log, stor))
 	router.Get("/{alias}", redirect.New(log, stor))
-	router.Delete("/delete/{alias}", deleteurl.New(log, stor))
 
 	srv := &http.Server{
 		Addr:         cfg.Address,

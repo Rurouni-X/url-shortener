@@ -22,20 +22,18 @@ type Results struct {
 }
 
 func (s *Storage) SaveURL(urlToSave, alias string) (int64, error) {
-	const op = "storage.database.database"
-	query := `INSERT INTO url(url, alias) VALUES($1, $2)`
+	const op = "storage.database.SaveURL"
+	query := `INSERT INTO url(url, alias) VALUES($1, $2) RETURNING id`
 
-	res, err := s.db.Exec(query, urlToSave, alias)
+	var id int64
+	err := s.db.QueryRow(query, urlToSave, alias).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
-	id, err := res.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("%s: failed to get last insert id: %w", op, err)
-	}
 	return id, nil
 }
+
 
 func (s *Storage) GetURL(alias string) (string, error) {
 	const op = "storage.database.database"

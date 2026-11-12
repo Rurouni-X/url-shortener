@@ -16,12 +16,12 @@ import (
 
 type Request struct {
 	URL   string `json:"url" validate:"required,url"`
-	Alias string `json:"alias",omitempty`
+	Alias string `json:"alias,omitempty"`
 }
 
 type Response struct {
 	res.Response
-	Alias string `json:"alias",omitempty`
+	Alias string `json:"alias,omitempty"`
 }
 
 type URLSaver interface {
