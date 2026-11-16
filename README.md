@@ -10,6 +10,7 @@
 * **Конфигурация:** [ilyakaznacheev/cleanenv](https://github.com)
 * **Валидация:** [go-playground/validator](https://github.com)
 * **Логирование:** стандартный пакет `log/slog`
+* **Инфраструктура:** Docker, Docker Compose
 
 ---
 
@@ -17,32 +18,36 @@
 
 ```text
 url-shortener/
-├── cmd/ (или корень)
-│   └── main.go                     # Точка входа, инициализация роутера и HTTP-сервера
+├── cmd/
+│   └── url-shortener/
+│       └── main.go                 # Точка входа, инициализация роутера и HTTP-сервера
 ├── config/
 │   └── local.yaml                  # Конфигурационный файл приложения
-└── internal/
-    ├── config/                     # Загрузка и парсинг конфигурации
-    ├── http-server/
-    │   └── handlers/
-    │       ├── redirect/           # Редирект по короткому алиасу
-    │       └── url/
-    │           ├── delete/         # Удаление ссылки
-    │           ├── getAll/         # Получение списка всех ссылок
-    │           └── save/           # Создание новой короткой ссылки
-    ├── lib/
-    │   ├── api/response/           # Общие структуры HTTP-ответов
-    │   ├── logger/sl/              # Хелперы для slog
-    │   └── random/                 # Генератор случайных алиасов
-    └── storage/
-        └── database/               # Реализация работы с PostgreSQL
+├── sql/
+│   └── init.sql                    # SQL-скрипт инициализации таблицы при старте контейнера
+├── internal/
+│   ├── config/                     # Загрузка и парсинг конфигурации
+│   ├── http-server/
+│   │   └── handlers/
+│   │       ├── redirect/           # Редирект по короткому алиасу
+│   │       └── url/
+│   │           ├── delete/         # Удаление ссылки
+│   │           ├── getAll/         # Получение списка всех ссылок
+│   │           └── save/           # Создание новой короткой ссылки
+│   ├── lib/
+│   │   ├── api/response/           # Общие структуры HTTP-ответов
+│   │   ├── logger/sl/              # Хелперы для slog
+│   │   └── random/                 # Генератор случайных алиасов
+│   └── storage/
+│       └── database/               # Реализация работы с PostgreSQL
+└── docker-compose.yml              # Конфигурация контейнера PostgreSQL
 ```
 
 ---
 
 ## База данных
 
-Перед запуском приложения необходимо создать таблицу `url` в PostgreSQL:
+При запуске базы данных через Docker Compose таблица `url` и индекс создаются автоматически из файла `sql/init.sql`:
 
 ```sql
 CREATE TABLE IF NOT EXISTS url (
@@ -54,17 +59,19 @@ CREATE TABLE IF NOT EXISTS url (
 CREATE INDEX IF NOT EXISTS idx_alias ON url(alias);
 ```
 
+Если вы используете локально установленный PostgreSQL без Docker, выполните этот скрипт вручную.
+
 ---
 
 ## Конфигурация
 
-Приложение считывает настройки из YAML-файла, путь к которому передается через переменную окружения `CONFIG_PATH`. Пароль для Basic Auth рекомендуется задавать через переменную `HTTP_SERVER_PASSWORD`.
+Приложение считывает настройки из YAML-файла, путь к которому передается через переменную окружения `CONFIG_PATH`. Пароль для Basic Auth задается через переменную `HTTP_SERVER_PASSWORD`.
 
-Пример файла `config/local.yaml`:
+Пример файла `config/local.yaml` (настроен под параметры из `docker-compose.yml`):
 
 ```yaml
 env: "local" # Доступные значения: local, dev, prod
-storage_path: "postgres://user:password@localhost:5432/url_shortener?sslmode=disable"
+storage_path: "postgres://url-shortener:pass@localhost:5433/url?sslmode=disable"
 http_server:
   address: "localhost:8080"
   timeout: 4s
@@ -85,16 +92,22 @@ http_server:
 
 1. **Клонируйте репозиторий и установите зависимости:**
    ```bash
-   git clone <https://github.com/Rurouni-X/url-shortener>
+   git clone https://github.com/Rurouni-X/url-shortener
    cd url-shortener
    go mod download
    ```
 
-2. **Задайте переменные окружения и запустите сервер:**
+2. **Поднимите базу данных PostgreSQL в Docker:**
+   ```bash
+   docker-compose up -d
+   ```
+   *База данных запустится на порту `5433`, а скрипт `sql/init.sql` автоматически создаст нужную таблицу.*
+
+3. **Задайте переменные окружения и запустите сервер:**
    ```bash
    export CONFIG_PATH="./config/local.yaml"
    export HTTP_SERVER_PASSWORD="secret_password"
-   go run main.go
+   go run ./cmd/url-shortener/main.go
    ```
 
 ---
